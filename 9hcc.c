@@ -23,6 +23,23 @@ struct Token {
 // token variable
 Token *token;
 
+// user input
+char *user_input;
+
+// notify error pos
+void error_at(char *loc, char *fmt, ...) {
+  va_list ap;
+  va_start(ap, fmt);
+
+  int pos = loc - user_input;
+  fprintf(stderr, "%s\n", user_input);
+  fprintf(stderr, "%*s", pos, "");
+  fprintf(stderr, "^ ");
+  vfprintf(stderr, fmt, ap);
+  fprintf(stderr, "\n");
+  exit(1);
+}
+
 /// Error handling
 // get argument as well as printf
 void error(char *fmt, ...) {
@@ -47,7 +64,7 @@ bool consume(char op) {
 // nor cause error
 void expect(char op) {
   if (token->kind != TK_RESERVED || token->str[0] != op) {
-    error("not a '%c'.", op);
+    error_at(token->str, "not a '%c'.", op);
   }
   token = token->next;
 }
@@ -56,7 +73,7 @@ void expect(char op) {
 // nor cause error
 int expect_number() {
   if (token->kind != TK_NUM) {
-    error("not a number");
+    error_at(token->str,"not a number");
   }
   int val = token->val;
   token = token->next;
@@ -100,7 +117,7 @@ Token *tokenize(char *p) {
       cur->val = strtol(p, &p, 10);
       continue;
     }
-    error("cannot tokenize");
+    error_at(cur->str, "cannot tokenize");
   }
 
   new_token(TK_EOF, cur, p);
@@ -113,7 +130,8 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Invalid argument count");
     return 1;
   }
-
+  // user input save
+  user_input = argv[1];
   token = tokenize(argv[1]);
 
   // asm header
