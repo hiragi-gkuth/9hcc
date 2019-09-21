@@ -6,9 +6,9 @@
 #include <string.h>
 
 typedef enum {
-	      TK_RESERVED,
-	      TK_NUM,
-	      TK_EOF,
+  TK_RESERVED,
+  TK_NUM,
+  TK_EOF,
 } TokenKind;
 
 typedef struct Token Token;
@@ -21,11 +21,11 @@ struct Token {
 };
 
 typedef enum {
-	      ND_ADD,
-	      ND_SUB,
-	      ND_MUL,
-	      ND_DIV,
-	      ND_NUM,
+  ND_ADD,
+  ND_SUB,
+  ND_MUL,
+  ND_DIV,
+  ND_NUM,
 } NodeKind;
 
 typedef struct Node Node;
@@ -34,7 +34,7 @@ struct Node {
   NodeKind kind;
   Node *lhs;
   Node *rhs;
-  int val;v
+  int val;
 };
 
 // prototypes
@@ -43,14 +43,11 @@ Node *mul();
 Node *unary();
 Node *primary();
 
-  
-
 // token variable
 Token *token;
 
 // user input
 char *user_input;
-
 
 // notify error pos
 void error_at(char *loc, char *fmt, ...) {
@@ -99,16 +96,14 @@ void expect(char op) {
 // nor cause error
 int expect_number() {
   if (token->kind != TK_NUM) {
-    error_at(token->str,"not a number");
+    error_at(token->str, "not a number");
   }
   int val = token->val;
   token = token->next;
   return val;
 }
 
-bool at_eof() {
-  return token->kind == TK_EOF;
-}
+bool at_eof() { return token->kind == TK_EOF; }
 
 // create new token and link cur
 Token *new_token(TokenKind kind, Token *cur, char *str) {
@@ -132,7 +127,8 @@ Token *tokenize(char *p) {
       continue;
     }
     // + or -
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' || *p == ')') {
+    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
+        *p == ')') {
       cur = new_token(TK_RESERVED, cur, p++);
       continue;
     }
@@ -149,7 +145,6 @@ Token *tokenize(char *p) {
   new_token(TK_EOF, cur, p);
   return head.next;
 }
-
 
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
@@ -176,10 +171,10 @@ Node *primary() {
 }
 
 Node *unary() {
-  if (consume("+") {
+  if (consume('+')) {
     return primary();
   }
-  if (consume("-")) {
+  if (consume('-')) {
     return new_node(ND_SUB, new_node_num(0), primary());
   }
   return primary();
@@ -199,7 +194,6 @@ Node *mul() {
   }
 }
 
-
 Node *expr() {
   Node *node = mul();
 
@@ -214,7 +208,6 @@ Node *expr() {
   }
 }
 
-
 void gen(Node *node) {
   if (node->kind == ND_NUM) {
     printf("  push %d\n", node->val);
@@ -228,24 +221,23 @@ void gen(Node *node) {
   printf("  pop rax\n");
 
   switch (node->kind) {
-  case ND_ADD:
-    printf("  add rax, rdi\n");
-    break;
-  case ND_SUB:
-    printf("  sub rax, rdi\n");
-    break;
-  case ND_MUL:
-    printf("  mul rdi\n");
-    break;
-  case ND_DIV:
-    printf("  cqo\n");
-    printf("  idiv rdi\n");
-    break;
+    case ND_ADD:
+      printf("  add rax, rdi\n");
+      break;
+    case ND_SUB:
+      printf("  sub rax, rdi\n");
+      break;
+    case ND_MUL:
+      printf("  mul rdi\n");
+      break;
+    case ND_DIV:
+      printf("  cqo\n");
+      printf("  idiv rdi\n");
+      break;
   }
 
   printf("  push rax\n");
-} 
-
+}
 
 int main(int argc, char **argv) {
   if (argc != 2) {
@@ -258,7 +250,7 @@ int main(int argc, char **argv) {
   token = tokenize(argv[1]);
   // parse
   Node *node = expr();
-  
+
   // asm header
   printf(".intel_syntax noprefix\n");
   printf(".global main\n");
