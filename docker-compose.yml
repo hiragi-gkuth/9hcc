@@ -1,0 +1,10 @@
+version: '3'
+services:
+  devCompiler: 
+    build: ./vm
+    image: hcc:latest
+    container_name: hcc-container
+    restart: always
+    volumes:
+      - ./:/root/9hcc
+    tty: true

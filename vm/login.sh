@@ -1,3 +1,3 @@
 #!/bin/bash
 
-docker exec -it vm_hcc /bin/bash
+docker exec -it hcc-container /bin/bash
