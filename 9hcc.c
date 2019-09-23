@@ -18,14 +18,19 @@ struct Token {
   Token *next;
   int val;
   char *str;
+  int len;
 };
 
 typedef enum {
-  ND_ADD,
-  ND_SUB,
-  ND_MUL,
-  ND_DIV,
-  ND_NUM,
+  ND_EQ,  // ==
+  ND_NEQ, // !=
+  ND_LT,  // <
+  ND_LE,  // <=
+  ND_ADD, // +
+  ND_SUB, // -
+  ND_MUL, // *
+  ND_DIV, // /
+  ND_NUM, // [1-9]*
 } NodeKind;
 
 typedef struct Node Node;
@@ -75,8 +80,10 @@ void error(char *fmt, ...) {
 
 // read token and go next if next is expected token
 // and return true nor false;
-bool consume(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op) {
+bool consume(char *op) {
+  if (token->kind != TK_RESERVED ||
+      token->len != strlen(op) ||
+      memcmp(op, token->str, token->len)) {
     return false;
   }
   token = token->next;
@@ -85,8 +92,9 @@ bool consume(char op) {
 
 // read token if next token is expected,
 // nor cause error
-void expect(char op) {
-  if (token->kind != TK_RESERVED || token->str[0] != op) {
+void expect(char *op) {
+  if (token->kind != TK_RESERVED ||
+      memcmp(token->str, op, token->len)) {
     error_at(token->str, "not a '%c'.", op);
   }
   token = token->next;
@@ -106,10 +114,13 @@ int expect_number() {
 bool at_eof() { return token->kind == TK_EOF; }
 
 // create new token and link cur
-Token *new_token(TokenKind kind, Token *cur, char *str) {
+Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
-  tok->kind = kind;
-  tok->str = str;
+  tok->kind = kind; // set kind
+  // set str
+  tok->str = malloc(sizeof(char) * (len + 1));
+  strncpy(tok->str, str, len); tok->str[len] = '\0';
+  tok->len = len;
   cur->next = tok;
   return tok;
 }
@@ -126,23 +137,36 @@ Token *tokenize(char *p) {
       p++;
       continue;
     }
-    // + or -
-    if (*p == '+' || *p == '-' || *p == '*' || *p == '/' || *p == '(' ||
-        *p == ')') {
-      cur = new_token(TK_RESERVED, cur, p++);
+    // == != <= >=
+    if (strncmp(p, "==", 2) == 0 ||
+        strncmp(p, "!=", 2) == 0 ||
+        strncmp(p, "<=", 2) == 0 ||
+        strncmp(p, ">=", 2) == 0 ) {
+      cur = new_token(TK_RESERVED, cur, p, 2);
+      p+=2;
+      continue;
+    }
+
+    // + - * / ( ) < >
+    if (*p == '+' || *p == '-' ||
+        *p == '*' || *p == '/' ||
+        *p == '(' || *p == ')' ||
+        *p == '<' || *p == '>') {
+      cur = new_token(TK_RESERVED, cur, p++, 1);
       continue;
     }
 
     // number
     if (isdigit(*p)) {
-      cur = new_token(TK_NUM, cur, p);
+      // 数値はstrに入れる必要がないのでlenに0をわたす
+      cur = new_token(TK_NUM, cur, p, 0);
       cur->val = strtol(p, &p, 10);
       continue;
     }
-    error_at(cur->str, "cannot tokenize");
+    error_at(p, "cannot tokenize");
   }
 
-  new_token(TK_EOF, cur, p);
+  new_token(TK_EOF, cur, p, 0);
   return head.next;
 }
 
@@ -162,19 +186,19 @@ Node *new_node_num(int val) {
 }
 
 Node *primary() {
-  if (consume('(')) {
+  if (consume("(")) {
     Node *node = expr();
-    expect(')');
+    expect(")");
     return node;
   }
   return new_node_num(expect_number());
 }
 
 Node *unary() {
-  if (consume('+')) {
+  if (consume("+")) {
     return primary();
   }
-  if (consume('-')) {
+  if (consume("-")) {
     return new_node(ND_SUB, new_node_num(0), primary());
   }
   return primary();
@@ -184,9 +208,9 @@ Node *mul() {
   Node *node = unary();
 
   for (;;) {
-    if (consume('*')) {
+    if (consume("*")) {
       node = new_node(ND_MUL, node, unary());
-    } else if (consume('/')) {
+    } else if (consume("/")) {
       node = new_node(ND_DIV, node, unary());
     } else {
       return node;
@@ -194,18 +218,55 @@ Node *mul() {
   }
 }
 
-Node *expr() {
+Node *add() {
   Node *node = mul();
 
   for (;;) {
-    if (consume('+')) {
+    if (consume("+")) {
       node = new_node(ND_ADD, node, mul());
-    } else if (consume('-')) {
+    } else if (consume("-")) {
       node = new_node(ND_SUB, node, mul());
     } else {
       return node;
     }
   }
+}
+
+
+Node *relational() {
+  Node *node = add();
+
+  for (;;) {
+    if (consume("<")) {
+      node = new_node(ND_LT, node, add());
+    } else if (consume("<=")) {
+      node = new_node(ND_LE, node, add());
+    } else if (consume(">")) {
+      node = new_node(ND_LT, add(), node);
+    } else if (consume(">=")) {
+      node = new_node(ND_LE, add(), node);
+    } else {
+      return node;
+    }
+  }
+}
+
+Node *equality() {
+  Node *node = relational();
+
+  for (;;) {
+    if (consume("==")) {
+      node = new_node(ND_EQ, node, relational());
+    } else if (consume("!=")) {
+      node = new_node(ND_NEQ, node, relational());
+    } else {
+      return node;
+    }
+  }
+}
+
+Node *expr() {
+  return equality();
 }
 
 void gen(Node *node) {
@@ -221,6 +282,8 @@ void gen(Node *node) {
   printf("  pop rax\n");
 
   switch (node->kind) {
+    case ND_NUM:
+      break;
     case ND_ADD:
       printf("  add rax, rdi\n");
       break;
@@ -234,9 +297,45 @@ void gen(Node *node) {
       printf("  cqo\n");
       printf("  idiv rdi\n");
       break;
+    case ND_EQ:
+      printf("  cmp rax, rdi\n");
+      printf("  sete al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_NEQ:
+      printf("  cmp rax, rdi\n");
+      printf("  setne al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_LT:
+      printf("  cmp rax, rdi\n");
+      printf("  setl al\n");
+      printf("  movzb rax, al\n");
+      break;
+    case ND_LE:
+      printf("  cmp rax, rdi\n");
+      printf("  setle al\n");
+      printf("  movzb rax, al\n");
+      break;
   }
 
   printf("  push rax\n");
+}
+
+void debug_tokenized(Token *token) {
+  fprintf(stderr, "-------- tokenized --------\n");
+  fprintf(stderr, "begin");
+  while (token->kind != TK_EOF) {
+    int kind = token->kind;
+    fprintf(stderr, " -> ");
+    if (kind == TK_NUM) {
+      fprintf(stderr, "%d", token->val);
+    } else {
+      fprintf(stderr, "%s", token->str);
+    }
+    token = token->next;
+  }
+  fprintf(stderr, "\n-------- tokenized --------\n");
 }
 
 int main(int argc, char **argv) {
@@ -248,6 +347,9 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   // tokenize
   token = tokenize(argv[1]);
+
+  debug_tokenized(token);
+
   // parse
   Node *node = expr();
 
