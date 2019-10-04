@@ -11,6 +11,6 @@ test: 9hcc
 	./test.sh
 
 clean:
-	rm -f 9hcc *.o *~ tmp*
+	rm -f ../9hcc ../*.o ../*~ ../tmp*
 
 .PHONY: test clean
