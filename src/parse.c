@@ -2,6 +2,7 @@
 #include <stdbool.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdio.h>
 
 #include "9hcc.h"
 
@@ -15,6 +16,13 @@ bool consume(char *op) {
   }
   token = token->next;
   return true;
+}
+
+Token *consume_ident() {
+  if (token->kind != TK_IDENT) {
+    return false;
+  }
+  return token;
 }
 
 // read token if next token is expected,
@@ -49,6 +57,7 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   strncpy(tok->str, str, len); tok->str[len] = '\0';
   tok->len = len;
   cur->next = tok;
+  printf("token created: %s\n", tok->str);
   return tok;
 }
 
@@ -74,12 +83,21 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    // + - * / ( ) < >
+    // + - * / ( ) < > =
     if (*p == '+' || *p == '-' ||
         *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' ||
-        *p == '<' || *p == '>') {
-      cur = new_token(TK_RESERVED, cur, p++, 1);
+        *p == '<' || *p == '>' ||
+        *p == '=') {
+      cur = new_token(TK_RESERVED, cur, p, 1);
+      p++;
+      continue;
+    }
+
+    // indent
+    if ('a' <= *p && *p <= 'z') {
+      cur = new_token(TK_IDENT, cur, p, 1);
+      p++;
       continue;
     }
 

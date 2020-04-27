@@ -4,7 +4,7 @@ try() {
     expected="$1"
     input="$2"
 
-    ./9hcc "$input" > tmp.s
+    src/9hcc "$input" > tmp.s
     gcc -o tmp tmp.s
     ./tmp
     actual="$?"
@@ -30,6 +30,7 @@ try 1 "1==1" #mean true
 try 0 "1!=1" #mean false
 try 1 "1<=1" 
 try 0 "1<1"
+try 0 "a=1"
 
 echo OK
 
