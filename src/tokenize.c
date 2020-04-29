@@ -1,3 +1,4 @@
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <ctype.h>
@@ -29,7 +30,6 @@ void tokenize(char *p) {
       p+=2;
       continue;
     }
-
     // + - * / ( ) < > = ;
     if (*p == '+' || *p == '-' ||
         *p == '*' || *p == '/' ||
@@ -40,19 +40,20 @@ void tokenize(char *p) {
       p++;
       continue;
     }
-
-    // indent
-    if ('a' <= *p && *p <= 'z') {
-      cur = new_token(TK_IDENT, cur, p, 1);
-      p++;
-      continue;
-    }
-
     // number
     if (isdigit(*p)) {
       // 数値はstrに入れる必要がないのでlenに0をわたす
       cur = new_token(TK_NUM, cur, p, 0);
       cur->val = strtol(p, &p, 10);
+      continue;
+    }
+    // multiple ident
+    if (isalpha(*p)){
+      char *ident = p;
+      while (isalpha(*(ident++)));
+      int len = ident - (p + 1);
+      cur = new_token(TK_IDENT, cur, p, len);
+      p+=len;
       continue;
     }
     error_at(p, "cannot tokenize: '%c'", *p);

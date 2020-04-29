@@ -8,6 +8,21 @@
 
 Node *code[1024];
 
+// variable finder
+typedef struct LVar LVar;
+
+struct LVar {
+  LVar *next;
+  char *name;
+  int len;
+  int offset;
+};
+
+LVar *locals;
+
+static LVar *find_lvar(Token *tok);
+static void add_lvar(LVar lvar);
+
 // Node create functions
 static Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
 static Node *new_node_num(int val);
@@ -31,6 +46,19 @@ void program() {
   code[i] = NULL;
 }
 
+static LVar *find_lvar(Token *tok) {
+  if (locals == NULL) {
+    locals = calloc(1, sizeof(LVar));
+  }
+  for (LVar *var = locals; var; var = var->next) {
+    if (var->len == tok->len && !memcmp(tok->str, var->name, var->len)) {
+      return var;
+    }
+  }
+  return NULL;
+}
+
+
 static Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -52,8 +80,19 @@ static Node *primary() {
   if (tok) {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
-    node->offset = (tok->str[0] - 'a' + 1) * 8;
-    tok = tok->next;
+
+    LVar *lvar = find_lvar(tok);
+    if (lvar) {
+      node->offset = lvar->offset;
+    } else {
+      lvar = calloc(1, sizeof(LVar));
+      lvar->next = locals;
+      lvar->name = tok->str;
+      lvar->len = tok->len;
+      lvar->offset = locals->offset + 8;
+      node->offset = lvar->offset;
+      locals = lvar;
+    }
     return node;
   }
   if (consume("(")) {
