@@ -20,9 +20,11 @@ bool consume(char *op) {
 
 Token *consume_ident() {
   if (token->kind != TK_IDENT) {
-    return false;
+    return NULL;
   }
-  return token;
+  Token *t = token;
+  token = token->next;
+  return t;
 }
 
 // read token if next token is expected,
@@ -30,7 +32,7 @@ Token *consume_ident() {
 void expect(char *op) {
   if (token->kind != TK_RESERVED ||
       memcmp(token->str, op, token->len)) {
-      error_at(token->str, "expected %.*s, but %s.", token->len, op, token->str);
+      error_at(token->str, "expected %s, but %c.", op, token->str[0]);
       exit(1);
   }
   

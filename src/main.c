@@ -13,7 +13,7 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   // tokenize
   tokenize(argv[1]);
-  debug_tokenized(token);
+  // debug_tokenized(token);
   // construct node
   program();
 

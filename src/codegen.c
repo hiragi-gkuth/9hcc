@@ -26,7 +26,6 @@ void program() {
   while (!at_eof()) {
     code[i++] = stmt();
   }
-  fprintf(stderr, "end gen\n");
   code[i] = NULL;
 }
 
@@ -36,6 +35,7 @@ Node *primary() {
     Node *node = calloc(1, sizeof(Node));
     node->kind = ND_LVAR;
     node->offset = (tok->str[0] - 'a' + 1) * 8;
+    tok = tok->next;
     return node;
   }
   if (consume("(")) {
