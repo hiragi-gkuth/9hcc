@@ -4,9 +4,8 @@
 void error_at(char *loc, char *fmt, ...);
 void error(char *fmt, ...);
 
-// parse.c
-
-// enums / types
+// tokenize.c
+void tokenize(char *p);
 typedef enum {
   TK_RESERVED,
   TK_IDENT,
@@ -24,19 +23,14 @@ struct Token {
   int len;
 };
 
-// prototypes difinitions
 Token *consume_ident();
 bool consume(char* op);
 void expect(char *op);
 int expect_number();
 bool at_eof();
-Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 
-void tokenize(char *p);
 
-// codegen
-
-// enums / types
+// codegen.c
 typedef enum {
   ND_EQ,  // ==
   ND_NEQ, // !=
@@ -61,26 +55,16 @@ struct Node {
   int offset; // use for ND_LVAR
 };
 
-// ebnf prototype definitions
+// parse.c
+// Construct Nodes
 void program();
-Node *stmt();
-Node *expr();
-Node *assign();
-Node *mul();
-Node *unary();
-Node *primary();
-
-// node manipulators definitions
-Node *new_node(NodeKind kind, Node *lhs, Node *rhs);
-Node *new_node_num(int val);
-
+// Generate assembly from Nodes
 void gen(Node *node);
 
 // debug.c
 void debug_tokenized();
 
-// global variables
-
+// externs
 extern Token *token;
 extern Node *code[];
 extern char *user_input;
