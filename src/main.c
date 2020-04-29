@@ -1,9 +1,7 @@
 #include <stdio.h>
 #include "9hcc.h"
 
-
 Token *token;
-Node *code[100];
 char *user_input;
 
 int main(int argc, char **argv) {
@@ -15,7 +13,7 @@ int main(int argc, char **argv) {
   user_input = argv[1];
   // tokenize
   tokenize(argv[1]);
-  // debug_tokenized(token);
+  debug_tokenized(token);
   // construct node
   program();
 
@@ -39,7 +37,7 @@ int main(int argc, char **argv) {
 
   // epilogue
   printf("  mov rsp, rbp\n");
-  printf("  pop rax\n");
+  printf("  pop rbp\n");
   printf("  ret\n");
   return 0;
 }

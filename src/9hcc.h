@@ -32,7 +32,7 @@ int expect_number();
 bool at_eof();
 Token *new_token(TokenKind kind, Token *cur, char *str, int len);
 
-Token *tokenize(char *p);
+void tokenize(char *p);
 
 // codegen
 
@@ -77,7 +77,7 @@ Node *new_node_num(int val);
 void gen(Node *node);
 
 // debug.c
-void debug_tokenized(Token *token);
+void debug_tokenized();
 
 // global variables
 

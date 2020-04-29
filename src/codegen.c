@@ -3,6 +3,8 @@
 
 #include "9hcc.h"
 
+Node *code[100];
+
 Node *new_node(NodeKind kind, Node *lhs, Node *rhs) {
   Node *node = calloc(1, sizeof(Node));
   node->kind = kind;
@@ -19,10 +21,12 @@ Node *new_node_num(int val) {
 }
 
 void program() {
+  
   int i = 0;
   while (!at_eof()) {
     code[i++] = stmt();
   }
+  fprintf(stderr, "end gen\n");
   code[i] = NULL;
 }
 

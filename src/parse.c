@@ -30,8 +30,10 @@ Token *consume_ident() {
 void expect(char *op) {
   if (token->kind != TK_RESERVED ||
       memcmp(token->str, op, token->len)) {
-    error_at(token->str, "not a '%c'.", op);
+      error_at(token->str, "expected %.*s, but %s.", token->len, op, token->str);
+      exit(1);
   }
+  
   token = token->next;
 }
 
@@ -39,7 +41,7 @@ void expect(char *op) {
 // nor cause error
 int expect_number() {
   if (token->kind != TK_NUM) {
-    error_at(token->str, "not a number");
+    error_at(token->str, "expected a number, but %s.", token->str);
   }
   int val = token->val;
   token = token->next;
@@ -53,19 +55,19 @@ Token *new_token(TokenKind kind, Token *cur, char *str, int len) {
   Token *tok = calloc(1, sizeof(Token));
   tok->kind = kind; // set kind
   // set str
-  tok->str = malloc(sizeof(char) * (len + 1));
-  strncpy(tok->str, str, len); tok->str[len] = '\0';
+  tok->str = str;
   tok->len = len;
+  tok->next = NULL;
   cur->next = tok;
-  printf("token created: %s\n", tok->str);
-  return tok;
+  return cur->next;
 }
 
 // tokenize and return p
-Token *tokenize(char *p) {
-  Token head;
-  head.next = NULL;
-  Token *cur = &head;
+void tokenize(char *p) {
+  // calloc head
+  Token *head = calloc(1, sizeof(Token));
+  token = head;
+  Token *cur = token;
 
   while (*p) {
     // skip space
@@ -83,12 +85,12 @@ Token *tokenize(char *p) {
       continue;
     }
 
-    // + - * / ( ) < > =
+    // + - * / ( ) < > = ;
     if (*p == '+' || *p == '-' ||
         *p == '*' || *p == '/' ||
         *p == '(' || *p == ')' ||
         *p == '<' || *p == '>' ||
-        *p == '=') {
+        *p == '=' || *p == ';') {
       cur = new_token(TK_RESERVED, cur, p, 1);
       p++;
       continue;
@@ -108,9 +110,10 @@ Token *tokenize(char *p) {
       cur->val = strtol(p, &p, 10);
       continue;
     }
-    error_at(p, "cannot tokenize");
+    error_at(p, "cannot tokenize: '%c'", *p);
   }
+  cur = new_token(TK_EOF, cur, p, 0);
 
-  new_token(TK_EOF, cur, p, 0);
-  return head.next;
+  // 先頭が空っぽなので，一つズラす
+  token = token->next;
 }
